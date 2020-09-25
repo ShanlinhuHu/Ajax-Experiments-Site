@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTP with JavaScript</title>
+
+    <style>
+        form {
+            border: 2px solid black;
+            width: 30vw;
+            margin-top: 2vh;
+            margin-left: 5vw;
+            padding-top:2vh;
+            padding-bottom: 2vh;
+            padding-left:2vw;
+            background-color: #0076DE ;
+        }
+        
+        label {
+            font-size: large;
+        }
+        #buttons {
+            width: 30vw;
+            margin-left: 5vw;
+        }
+
+        button {
+            text-decoration-color: white;
+            color:white;
+            background-color: black;
+        }
+        button:hover {
+            color:yellow;
+        }
+
+        button:active {
+            color:red;
+        }
+
+        th, td {
+            border: 1px solid black;
+        }
+    </style>
+
+</head>
+<body>
+
+    <h1>Input form:</h1>
+    <form id="xform">
+        <label for="fname">ID:</label><br>
+        <input type="text" id="record_id" name="record_id" size="45"><br>
+        <label for="lname">article name :</label><br>
+        <input type="text" id="article_name" name="article_name" size="45"><br>
+        <label for="fname">article body :</label><br>
+        <textarea id="article_body" name="article_body" rows="3" cols="47"></textarea><br>
+        <input type="hidden" id="date" name="date">
+    </form> 
+
+    <br>
+
+    <h1>Perform the corresponding HTTP methods:</h1>
+    <section id="buttons">
+        <h2>XMLHttpRequest:</h2>
+        <button id="xpostBtn">postBtn</button>
+        <button id="xgetBtn">getBtn</button>
+        <button id="xputBtn">putBtn</button>
+        <button id="xdeleteBtn">deleteBtn</button>
+
+        <h2>fetch():</h2>
+        <button id="fpostBtn">postBtn</button>
+        <button id="fgetBtn">getBtn</button>
+        <button id="fputBtn">putBtn</button>
+        <button id="fdeleteBtn">deleteBtn</button>
+    </section>
+
+    <h1>Output:</h1>
+    <output id="response"></output>>
+
+
+      <script>
+        var date = new Date();
+        document.getElementById("date").innerHTML = date;
+
+        //output the respond
+        let myTable = document.getElementById('response')
+
+        //read the data from form
+        const data = Array.from(document.getElementById('xform')).reduce((key,value) => ({...key, [value.id]: 
+        value.value}), {});
+        data.date = date;
+
+        //Create a HTML Table element.
+        function createTable(arrObj) {
+            function innerContent(obj) {
+            const entries = Object.entries(obj);
+            if (entries.length < 1) return document.createElement("span");
+            const table = document.createElement("table");
+            entries.forEach(([key, value]) => {
+                const row = table.insertRow(-1);
+                const keyCell = row.insertCell(0);
+                const valueCell = row.insertCell(1);
+                keyCell.innerText = key;
+                if (typeof value === "string") {
+                valueCell.innerText = value;
+                } else {
+                    if (Object.entries(value).length > 0) {
+                    valueCell.appendChild(innerContent(value))
+                    }else{
+                        valueCell.innerHTML = "{}";
+                    }
+                }
+                });
+                return table;
+            }
+            myTable.innerHTML = "";
+            myTable.appendChild(innerContent(arrObj));
+            }
+
+        //XMLHttpRequest
+        const xpostBtn = document.getElementById('xpostBtn');
+        const xgetBtn = document.getElementById('xgetBtn');
+        const xputBtn = document.getElementById('xputBtn');
+        const xdeleteBtn = document.getElementById('xdeleteBtn');
+
+        const sendHttpRequestXML = (method, url, data) => {
+        const promise = new Promise((resolve) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open(method, url);
+
+            xhr.responseType = 'json';
+
+            if (data) {
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            }
+
+            xhr.onload = () => {
+                resolve(xhr.response);
+            };
+            xhr.send(JSON.stringify(data));
+        });
+        return promise;
+        };
+
+        const xpostData = () => {
+            sendHttpRequestXML('POST', 'https://httpbin.org/post', data).then(responseData => {
+            console.log(responseData);
+            createTable(responseData);
+            })
+        };
+
+        const xgetData = () => {
+            sendHttpRequestXML('GET', 'https://httpbin.org/get').then(responseData => {
+            createTable(responseData);
+        });
+        };
+
+        const xputData = () => {
+            sendHttpRequestXML('PUT', 'https://httpbin.org/put', data).then(responseData => {
+            createTable(responseData);
+            })
+        };
+
+        const xdeleteData = () => {
+            sendHttpRequestXML('DELETE', 'https://httpbin.org/delete', data).then(responseData => {
+            createTable(responseData);
+            })
+        };
+
+        xpostBtn.addEventListener('click', xpostData);
+        xgetBtn.addEventListener('click', xgetData);
+        xputBtn.addEventListener('click', xputData);
+        xdeleteBtn.addEventListener('click', xdeleteData);
+
+        //fetch()
+        const fpostBtn = document.getElementById('fpostBtn');
+        const fgetBtn = document.getElementById('fgetBtn');
+        const fputBtn = document.getElementById('fputBtn');
+        const fdeleteBtn = document.getElementById('fdeleteBtn');
+
+        const sendHttpRequestFetch = (method, url, data) => {
+            return fetch(url, {
+            method: method,
+            body: JSON.stringify(data),
+            headers: data ? { 'Content-Type': 'application/json' } : {}
+            }).then(response => {return response.json();});
+        };
+
+        const fpostData = () => {
+            sendHttpRequestFetch('POST', 'https://httpbin.org/post', data).then(responseData => {
+            createTable(responseData);
+            })
+        };
+
+        const fgetData = () => {
+            sendHttpRequestFetch('GET', 'https://httpbin.org/get').then(responseData => {
+                createTable(responseData);
+        });
+        };
+        const fputData = () => {
+            sendHttpRequestFetch('PUT', 'https://httpbin.org/put', data).then(responseData => {
+                createTable(responseData);
+        });
+        };
+
+        const fdeleteData = () => {
+            sendHttpRequestFetch('DELETE', 'https://httpbin.org/delete', data).then(responseData => {
+                createTable(responseData);
+            })
+        };
+        fpostBtn.addEventListener('click', fpostData);
+        fgetBtn.addEventListener('click', fgetData);
+        fputBtn.addEventListener('click', fputData);
+        fdeleteBtn.addEventListener('click', fdeleteData);
+      </script>
+</body>
+</html>
